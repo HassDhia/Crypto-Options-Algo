@@ -1,0 +1,7 @@
+# Python virtual environments
+venv/
+
+# Terraform local state
+*.tfstate
+*.tfstate.backup
+.terraform/
