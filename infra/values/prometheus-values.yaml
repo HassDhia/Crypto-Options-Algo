@@ -1,0 +1,7 @@
+prometheus:
+  prometheusSpec:
+    scrapeInterval: 15s
+    retention: 15d
+    resources:
+      limits:
+        memory: 2Gi

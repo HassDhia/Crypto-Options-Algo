@@ -1,0 +1,5 @@
+replica:
+  replicaCount: 1
+master:
+  persistence:
+    size: 10Gi
