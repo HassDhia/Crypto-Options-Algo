@@ -1,0 +1,6 @@
+# Python dependencies for core services
+fastapi
+pydantic
+numpy
+pandas
+torch
