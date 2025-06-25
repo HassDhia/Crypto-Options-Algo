@@ -1,0 +1,10 @@
+auth:
+  username: local
+  password: local
+  database: edge
+primary:
+  persistence:
+    size: 20Gi
+resources:
+  limits:
+    memory: 1Gi
