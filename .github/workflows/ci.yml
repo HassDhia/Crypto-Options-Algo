@@ -21,3 +21,15 @@ jobs:
           sudo mv helmfile /usr/local/bin/
           cd infra
           helmfile lint
+  test-ingestor:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Unit tests (ingestor)
+        run: |
+          cd services/ingestor
+          pip install poetry
+          poetry install --with dev
+          poetry run pytest -q
