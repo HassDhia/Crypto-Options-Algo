@@ -1,0 +1,9 @@
+{
+  "name": "crypto-options-algo",
+  "private": true,
+  "workspaces": [
+    "scout-agent",
+    "risk-agent",
+    "sizing-agent"
+  ]
+}
