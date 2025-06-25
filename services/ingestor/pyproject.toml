@@ -1,0 +1,17 @@
+[tool.poetry]
+name = "ingestor"
+version = "0.1.0"
+description = "Deribit BTC options tick feed → Redpanda Avro"
+authors = ["Crypto Options Algo <dev@edge.fund>"]
+packages = [{include = "ingest"}]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+aiohttp = "^3.9"
+fastavro = "^1.9"
+confluent-kafka = "^2.4"
+pydantic = "^2.7"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.2"
+pytest-asyncio = "^0.23"
