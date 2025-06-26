@@ -1,63 +1,37 @@
-provider "google" {
-  project = var.project_id
-  region  = var.region
-}
-
-provider "google-beta" {
-  project = var.project_id
-  region  = var.region
-}
-
-# ----------- networking -----------
-resource "google_compute_network" "gke_vpc" {
-  name                    = "gke-core-vpc"
+resource "google_compute_network" "vpc" {
+  name                    = "btc-options-vpc"
   auto_create_subnetworks = false
 }
 
-resource "google_compute_subnetwork" "gke_subnet" {
-  name          = "gke-core-subnet"
-  ip_cidr_range = "10.50.0.0/16"
-  network       = google_compute_network.gke_vpc.id
+resource "google_compute_subnetwork" "subnet" {
+  name          = "btc-options-subnet"
+  ip_cidr_range = "10.10.0.0/16"
   region        = var.region
+  network       = google_compute_network.vpc.id
 }
 
-# ----------- GKE cluster -----------
-resource "google_container_cluster" "gke" {
-  name     = var.gke_cluster_name
-  location = var.region
+module "gke" {
+  source  = "terraform-google-modules/kubernetes-engine/google//modules/private-cluster"
+  version = "~> 30.0"
 
-  network    = google_compute_network.gke_vpc.id
-  subnetwork = google_compute_subnetwork.gke_subnet.id
+  project_id  = var.project_id
+  name        = var.gke_cluster_name
+  region      = var.region
+  network     = google_compute_network.vpc.name
+  subnetwork  = google_compute_subnetwork.subnet.name
 
-  remove_default_node_pool = true
-  initial_node_count       = 1
+  node_pools = [
+    {
+      name         = "primary"
+      machine_type = var.node_machine_type
+      min_count    = 3
+      max_count    = 3
+    },
+  ]
 
   workload_identity_config {
     workload_pool = "${var.project_id}.svc.id.goog"
   }
-
-  release_channel { channel = "REGULAR" }
-  enable_autopilot = false
-}
-
-resource "google_container_node_pool" "primary" {
-  name       = "default-pool"
-  location   = var.region
-  cluster    = google_container_cluster.gke.name
-  node_count = var.node_count
-
-  node_config {
-    machine_type = var.node_machine_type
-    oauth_scopes = [
-      "https://www.googleapis.com/auth/cloud-platform"
-    ]
-    tags = var.network_tags
-    metadata = {
-      disable-legacy-endpoints = "true"
-    }
-  }
-
-  lifecycle { ignore_changes = [ node_count ] }
 }
 
 # ----------- OIDC SA for GitHub Actions -----------

@@ -1,6 +1,6 @@
 terraform {
   backend "gcs" {
-    bucket = "tfstate-crypto-options-algo"
+    bucket = "btc-options-terraform-state"
     prefix = "gke/dev"
   }
 }
