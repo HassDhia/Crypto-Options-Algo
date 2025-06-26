@@ -1,4 +1,4 @@
-output "cluster_name"        { value = google_container_cluster.gke.name }
-output "cluster_region"      { value = google_container_cluster.gke.location }
-output "network_name"        { value = google_compute_network.gke_vpc.name }
-output "subnet_cidr"         { value = google_compute_subnetwork.gke_subnet.ip_cidr_range }
+output "cluster_name"        { value = module.gke.name }
+output "cluster_region"      { value = var.region }
+output "network_name"        { value = google_compute_network.vpc.name }
+output "subnet_cidr"         { value = google_compute_subnetwork.subnet.ip_cidr_range }

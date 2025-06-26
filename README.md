@@ -1,6 +1,6 @@
 # Crypto Options Algo 🚀
 
-**Production-grade, AI-assisted BTC-options trading stack**  
+**Production-grade, AI-assisted BTC-options trading stack**
 Low-latency execution in AMS1; Python / TypeScript / Go micro-services on GKE; fully-automated RL parameter tuning.
 
 ---
@@ -74,12 +74,34 @@ cd execution-agent && go run ./cmd/sim   # connects to Deribit testnet
 
 ---
 
+## 🧪 Testing
+
+The project includes a comprehensive testing system:
+
+```bash
+# Run unit tests for all components
+make test-unit
+
+# Run integration tests (requires Docker)
+make test-integration
+
+# Clean up test artifacts
+make clean
+```
+
+The integration test environment uses Docker Compose to spin up:
+- Redpanda (Kafka-compatible message broker)
+- PostgreSQL database
+- Redis parameter server
+- All agents and services
+- A test runner container
+
 ## 🛠 CI / CD
 
 | Stage             | Tooling                                          |
 | ----------------- | ------------------------------------------------ |
 | **Build**         | GitHub Actions (`docker buildx`)                 |
-| **Test**          | Jest, PyTest, golangci-lint                      |
+| **Test**          | Jest, PyTest, golangci-lint, Integration Tests   |
 | **Deploy**        | Helm + Terraform (`gke-dev` → `gke-prod`)        |
 | **Observability** | Prometheus & Grafana dashboards auto-provisioned |
 
