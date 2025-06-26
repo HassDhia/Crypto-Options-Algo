@@ -1,0 +1,7 @@
+auth:
+  existingSecret: postgres-admin
+primary:
+  resources:
+    requests:
+      cpu: "250m"
+      memory: "512Mi"
