@@ -1,0 +1,14 @@
+[
+  {
+    "instrument": "BTC-25JUN25-60000-C",
+    "bid": 0.05,
+    "ask": 0.06,
+    "last": 0.055
+  },
+  {
+    "instrument": "ETH-25JUN25-3500-C",
+    "bid": 0.02,
+    "ask": 0.03,
+    "last": 0.025
+  }
+]
