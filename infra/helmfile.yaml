@@ -1,45 +1,55 @@
+helmDefaults:
+  atomic: true
+  wait: true
+  timeout: 600
+
 repositories:
-  - name: bitnami
-    url:  https://charts.bitnami.com/bitnami
   - name: redpanda
-    url:  https://charts.redpanda.com
+    url: https://charts.redpanda.com
+  - name: bitnami
+    url: https://charts.bitnami.com/bitnami
   - name: prometheus-community
-    url:  https://prometheus-community.github.io/helm-charts
+    url: https://prometheus-community.github.io/helm-charts
   - name: grafana
-    url:  https://grafana.github.io/helm-charts
+    url: https://grafana.github.io/helm-charts
 
 releases:
-  # ---------- Redpanda (Kafka API) ----------
+  # Kafka‑compatible log store
   - name: redpanda
-    namespace: data
+    namespace: kafka
     chart: redpanda/redpanda
-    version: 5.7.60
-    values: [values/redpanda-values.yaml]
+    version: 5.1.4   # keep loose pin; bump in one place later
+    values:
+      - values/redpanda.yaml        # stub created below
 
-  # ---------- Postgres (stateful business DB) ----------
+  # OLTP store for trade & coeff snapshots
   - name: postgres
-    namespace: data
+    namespace: db
     chart: bitnami/postgresql
-    version: 15.2.7
-    values: [values/postgres-values.yaml]
+    version: 15.2.5
+    values:
+      - values/postgres.yaml
 
-  # ---------- Redis (Param server + cache) ----------
+  # Low‑latency cache for IV surface & coeffs
   - name: redis
-    namespace: data
+    namespace: cache
     chart: bitnami/redis
-    version: 19.5.4
-    values: [values/redis-values.yaml]
+    version: 19.3.2
+    values:
+      - values/redis.yaml
 
-  # ---------- Prometheus Operator ----------
-  - name: kube-promstack
-    namespace: observability
+  # Monitoring stack (Prometheus Operator + Grafana)
+  - name: kube-prom-stack
+    namespace: monitoring
     chart: prometheus-community/kube-prometheus-stack
-    version: 58.6.1
-    values: [values/prometheus-values.yaml]
+    version: 58.1.1
+    values:
+      - values/kps.yaml
 
-  # ---------- Grafana ----------
-  - name: grafana
-    namespace: observability
+  - name: grafana-dash
+    namespace: monitoring
     chart: grafana/grafana
-    version: 7.3.9
-    values: [values/grafana-values.yaml]
+    # pin minor for plugin compatibility
+    version: 7.3.0
+    values:
+      - values/grafana.yaml
