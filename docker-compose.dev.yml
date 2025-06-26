@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Infrastructure services
+  redpanda:
+    image: redpandadata/redpanda:v22.2.1
+    command:
+      - redpanda start
+      - --overprovisioned
+      - --smp 1
+      - --memory 1G
+      - --reserve-memory 0M
+      - --node-id 0
+      - --kafka-addr PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+    ports:
+      - "9092:9092"
+
+  postgres:
+    image: postgres:13-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  # Agents and services
+  ingestor:
+    build: ./services/ingestor
+    environment:
+      KAFKA_BROKERS: redpanda:29092
+      DERIBIT_TESTNET: "true"
+    depends_on:
+      - redpanda
+
+  scout-agent:
+    build: ./scout-agent
+    environment:
+      IV_SERVICE_URL: http://iv-surface:5000
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - ingestor
+      - redis
+
+  execution-agent:
+    build: ./execution-agent
+    environment:
+      REDIS_URL: redis://redis:6379
+      KAFKA_BROKERS: redpanda:29092
+    depends_on:
+      - redis
+      - redpanda
+
+  risk-agent:
+    build: ./risk-agent
+    environment:
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres
+      REDIS_URL: redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+
+  sizing-agent:
+    build: ./sizing-agent
+    environment:
+      REDIS_URL: redis://redis:6379
+      POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres
+    depends_on:
+      - redis
+      - postgres
+
+# Health checks ensure services are ready before starting agents
+x-healthcheck:
+  &redpanda-healthcheck
+  test: ["CMD", "rpk", "cluster", "health"]
+  interval: 5s
+  timeout: 10s
+  retries: 10
