@@ -1,10 +1,29 @@
+# Build stage for common module
+FROM python:3.10-slim as builder
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy entire project to access common module
+WORKDIR /build
+COPY . .
+
+# Install dependencies from root requirements.txt
+RUN pip install --no-cache-dir -r /build/requirements.txt
+
+# Final stage
 FROM python:3.10-slim
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed dependencies from builder
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 
-COPY . .
+# Copy common module
+COPY --from=builder /build/common /app/common
 
-CMD ["python", "-u", "__main__.py"]
+# Copy risk-agent code
+COPY ./risk-agent/ /app/
+
+CMD ["python", "-u", "/app/__main__.py"]
