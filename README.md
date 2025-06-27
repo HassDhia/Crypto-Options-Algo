@@ -16,35 +16,44 @@ graph LR
     subgraph Core Cluster (GKE)
         B[Data Ingestor] --> C[IV Surface API] --> D[Scout Agent<br>(Python)]
         E[Regime Detector] --> F[Risk Agent<br>(Python)]
-        D --> F --> G[Sizing Agent<br>(Python)] --> A
+        D --> F --> G[Sizing Agent<br>(Python)] --> H[Tuner Agent<br>(Python)] --> A
         G -->|trade intent| A
+        H -->|RL params| G
 
         subgraph Infra
-            H[Redpanda] & I[Postgres / NocoDB] & J[Redis Param Server]
+            I[Redpanda] & J[Postgres / NocoDB] & K[Redis Param Server]
         end
     end
-````
+```
 
 *Full component responsibilities, data contracts, SLOs, and rollout plan live in [`docs/architecture.md`](docs/architecture.md).*
 
 ---
 
-## 🗂 Directory Structure (initial scaffold)
+## 🗂 Directory Structure
 
 ```
 .
 ├── docs/
-│   └── architecture.md        # ← paste the full spec here (next commit)
-├── scout-agent/               # Python
-├── risk-agent/                # Python
-├── sizing-agent/              # Python
-├── execution-agent/           # Python
-├── requirements.txt           # Python dependencies
-├── .pre-commit-config.yaml    # lint / fmt hooks
+│   ├── architecture.md
+│   ├── contracts.md
+│   └── PROJECT_TASKS.md
+├── agents/
+│   ├── scout-agent/
+│   ├── risk-agent/
+│   ├── sizing-agent/
+│   ├── execution-agent/
+│   └── tuner-agent/
+├── dashboard/                # React/Typescript UI
+├── infra/                   # Terraform + Helm
+├── services/                # Data ingestion services
+├── common/                  # Shared libraries
+├── integration-tests/
+├── requirements.txt         # Python dependencies
+├── health-check.sh          # System health checks
+├── .pre-commit-config.yaml  # lint / fmt hooks
 └── .gitignore
 ```
-
-*(Agent folders are empty for now; CI skips their build until code lands.)*
 
 ---
 
@@ -63,7 +72,11 @@ pip install -r requirements.txt
 python -m scout-agent
 python -m risk-agent
 python -m sizing-agent
+python -m tuner-agent
 python -m execution-agent
+
+# Start dashboard (separate terminal)
+cd dashboard && npm install && npm run dev
 ```
 
 > **Note:** Cloud infra (GKE + AMS1 VPS) lives under `/infra/terraform`.
@@ -71,9 +84,20 @@ python -m execution-agent
 
 ---
 
-## 🧪 Testing
+## 🖥 Dashboard
 
-The project includes a comprehensive testing system:
+The React-based dashboard provides real-time visualization of:
+- Scouted trading opportunities
+- Executed trades
+- Risk alerts
+- RL parameter tuning progress
+- Sizing signals
+
+Access at `http://localhost:3000` after running `npm run dev` in the dashboard directory.
+
+---
+
+## 🧪 Testing
 
 ```bash
 # Run unit tests for all components
@@ -82,16 +106,20 @@ make test-unit
 # Run integration tests (requires Docker)
 make test-integration
 
+# Run end-to-end tests (includes dashboard)
+make test-e2e
+
 # Clean up test artifacts
 make clean
 ```
 
-The integration test environment uses Docker Compose to spin up:
-- Redpanda (Kafka-compatible message broker)
-- PostgreSQL database
-- Redis parameter server
+Test environment includes:
 - All agents and services
-- A test runner container
+- Dashboard UI
+- Redpanda (Kafka-compatible)
+- PostgreSQL
+- Redis
+- Test runner container
 
 ## 🛠 CI / CD
 
