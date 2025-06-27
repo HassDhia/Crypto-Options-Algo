@@ -3,7 +3,7 @@
 **Path:** `risk-agent`
 
 ## Overview
-Monitors portfolio risk and enforces risk limits.
+The Risk Agent enforces hard risk limits such as maximum notional exposure and maximum position size. It consumes scouted trade candidates from the `ticks.scouted` topic, checks proposed trades against configured risk limits, and publishes risk alerts to `risk.alerts` for any violations.
 
 ## Development
 | Purpose          | Command                               |
@@ -15,9 +15,11 @@ Monitors portfolio risk and enforces risk limits.
 
 ## Configuration
 Environment variables:
-- `REDIS_HOST`: Redis server host
-- `REDIS_PORT`: Redis server port
-- `RISK_LIMITS_JSON`: JSON string of risk limits
+- `REDIS_HOST`: Redis server host (default: localhost)
+- `REDIS_PORT`: Redis server port (default: 6379)
+- `RISK_LIMITS_JSON`: JSON string of risk limits with properties:
+  - `max_notional`: Maximum notional exposure per trade
+  - `max_position_contracts`: Maximum contracts per position
 
 ## Input/Output
 - **Input:** Redis portfolio data

@@ -9,8 +9,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /build
 COPY . .
 
-# Install dependencies from root requirements.txt
+# Install dependencies from root requirements.txt and risk-agent requirements
 RUN pip install --no-cache-dir -r /build/requirements.txt
+RUN pip install --no-cache-dir -r /build/risk-agent/requirements.txt
 
 # Final stage
 FROM python:3.10-slim
