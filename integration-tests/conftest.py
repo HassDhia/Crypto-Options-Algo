@@ -13,9 +13,8 @@ def redis_client():
 def redpanda_consumer():
     """Fixture providing a Kafka consumer for test topics"""
     return create_consumer(
-        bootstrap_servers='redpanda:29092',
-        group_id='test-group',
-        auto_offset_reset='earliest'
+        topic='ticks.raw',
+        group_id='test-group'
     )
 
 

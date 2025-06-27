@@ -15,6 +15,11 @@ services:
       - --advertise-kafka-addr PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
     ports:
       - "9092:9092"
+    healthcheck:
+      test: ["CMD", "rpk", "cluster", "health"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
 
   postgres:
     image: postgres:13-alpine
@@ -24,11 +29,21 @@ services:
       POSTGRES_DB: postgres
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   redis:
     image: redis:7-alpine
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Agents and services
   ingestor:
@@ -79,9 +94,3 @@ services:
       - postgres
 
 # Health checks ensure services are ready before starting agents
-x-healthcheck:
-  &redpanda-healthcheck
-  test: ["CMD", "rpk", "cluster", "health"]
-  interval: 5s
-  timeout: 10s
-  retries: 10

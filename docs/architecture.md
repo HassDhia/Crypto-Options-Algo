@@ -11,6 +11,7 @@ graph LR
   Sizing -->|size signals| Execution
   Execution -->|orders| Exchange
   Exchange -->|fills| WS
+```
 
 ## Components
 

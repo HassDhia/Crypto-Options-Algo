@@ -1,7 +1,7 @@
 # Crypto Options Algo 🚀
 
 **Production-grade, AI-assisted BTC-options trading stack**
-Low-latency execution in AMS1; Python / TypeScript / Go micro-services on GKE; fully-automated RL parameter tuning.
+Low-latency execution in AMS1; Python micro-services on GKE; fully-automated RL parameter tuning.
 
 ---
 
@@ -10,13 +10,13 @@ Low-latency execution in AMS1; Python / TypeScript / Go micro-services on GKE; f
 ```mermaid
 graph LR
     subgraph Edge POP (AMS1)
-        A[Execution Agent<br>(Go)]
+        A[Execution Agent<br>(Python)]
     end
 
     subgraph Core Cluster (GKE)
-        B[Data Ingestor] --> C[IV Surface API] --> D[Scout Agent]
-        E[Regime Detector] --> F[Risk Agent]
-        D --> F --> G[Sizing Agent] --> A
+        B[Data Ingestor] --> C[IV Surface API] --> D[Scout Agent<br>(Python)]
+        E[Regime Detector] --> F[Risk Agent<br>(Python)]
+        D --> F --> G[Sizing Agent<br>(Python)] --> A
         G -->|trade intent| A
 
         subgraph Infra
@@ -35,13 +35,11 @@ graph LR
 .
 ├── docs/
 │   └── architecture.md        # ← paste the full spec here (next commit)
-├── scout-agent/               # TypeScript
-├── risk-agent/                # TypeScript
-├── sizing-agent/              # TypeScript
-├── execution-agent/           # Go
-├── requirements.txt           # Python deps (IV Surface, Regime Detector, RL-Tuner)
-├── package.json               # npm workspaces root
-├── go.work                    # Go workspace (optional)
+├── scout-agent/               # Python
+├── risk-agent/                # Python
+├── sizing-agent/              # Python
+├── execution-agent/           # Python
+├── requirements.txt           # Python dependencies
 ├── .pre-commit-config.yaml    # lint / fmt hooks
 └── .gitignore
 ```
@@ -61,12 +59,11 @@ cd Crypto-Options-Algo
 python -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
 
-# TS agents
-npm ci --workspaces
-npm run test --workspaces
-
-# Go execution agent
-cd execution-agent && go run ./cmd/sim   # connects to Deribit testnet
+# Run all agents
+python -m scout-agent
+python -m risk-agent
+python -m sizing-agent
+python -m execution-agent
 ```
 
 > **Note:** Cloud infra (GKE + AMS1 VPS) lives under `/infra/terraform`.

@@ -31,7 +31,9 @@ def test_tick_flow(redis_client, redpanda_consumer, seed_sample_ticks):
     redpanda_consumer.poll(timeout_ms=5000)
 
     # Check that messages were consumed
-    assert redpanda_consumer.group_offsets("ticks.raw") > 0
+    partitions = redpanda_consumer.assignment()
+    total_offset = sum(redpanda_consumer.position(p) for p in partitions)
+    assert total_offset > 0
 
     # Check that Redis has the expected keys
     for tick in [
