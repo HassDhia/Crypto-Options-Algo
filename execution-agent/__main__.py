@@ -14,8 +14,8 @@ def main():
 
     for message in consumer:
         try:
-            # Log pretend order for each tick
-            logger.info("pretend order")
+            # Print "would trade" for each tick
+            print("would trade")
 
         except Exception as e:
             logger.error(f"Error processing scouted tick: {e}")

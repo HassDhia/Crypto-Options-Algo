@@ -1,5 +1,10 @@
 # Project Tasks (v1.0 Roadmap)
 
+### Prototype milestone
+✅  Message “price_update” published to `ticks.raw`
+✅  Scout writes `last_bid` and `last_ask` to Redis
+✅  `make test-integration` passes locally & in CI
+
 ## Task 1 – Infrastructure
 - **1-1 GKE Terraform module** – create Kubernetes cluster in `europe-west1` *(done)*
 - **1-2 Edge VPS Terraform** – provision AMS1 VPS for latency-critical execution

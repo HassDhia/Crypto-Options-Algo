@@ -40,10 +40,13 @@ services:
       - redpanda
 
   scout-agent:
-    build: ./scout-agent
+    build:
+      context: .
+      dockerfile: scout-agent/Dockerfile
     environment:
       IV_SERVICE_URL: http://iv-surface:5000
       REDIS_URL: redis://redis:6379
+      KAFKA_BOOTSTRAP_SERVERS: redpanda:29092
     depends_on:
       - ingestor
       - redis

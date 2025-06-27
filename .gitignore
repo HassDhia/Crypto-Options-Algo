@@ -11,3 +11,4 @@ Ok to proceed? (y)
 Created .gitignore file for flag type go,node,python,terraform,docker.
 There is no gitignore for Go,node,python,terraform,docker
 Available project types can be found by running `gitignore -types` or at https://github.com/github/gitignore
+terraform_*.zip

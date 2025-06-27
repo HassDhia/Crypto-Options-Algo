@@ -14,6 +14,8 @@ test-unit:
 test-integration:
 	@echo "Starting integration test environment..."
 	@docker compose -f docker-compose.test.yml up --build --abort-on-container-exit
+	@echo "Running integration tests..."
+	@pytest integration-tests --maxfail=1 -q
 
 # Start development environment
 dev-up:

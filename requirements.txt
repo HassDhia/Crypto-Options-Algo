@@ -4,3 +4,5 @@ pydantic
 numpy
 pandas
 torch
+kafka-python
+redis
