@@ -8,18 +8,27 @@ const SizingSignalsTable: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
 
+  useEffect(() => {
+    console.log('SizingSignalsTable mounted');
+    return () => console.log('SizingSignalsTable unmounted');
+  }, []);
+
   // Poll sizing signals every 5 seconds
   useEffect(() => {
     let isMounted = true;
     const loadSignals = async () => {
       try {
         setError(null);
+        console.log('Fetching sizing signals...');
         const result = await fetchSizingSignals();
+        console.log('Received signals:', result);
         if (isMounted) {
           setSignals(result);
           setLoading(false);
+          console.log('State updated with signals');
         }
       } catch (err) {
+        console.error('Error fetching signals:', err);
         if (isMounted) {
           setError(err as Error);
           setLoading(false);

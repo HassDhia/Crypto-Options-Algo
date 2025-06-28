@@ -4,3 +4,15 @@ prometheus:
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false
     retention: 5d
+    additionalServiceMonitors:
+      - name: execution-agent
+        namespace: default
+        selector:
+          matchLabels:
+            app: execution-agent
+        endpoints:
+          - port: 8000
+            path: /metrics
+            interval: 15s
+        additionalLabels:
+          release: kube-prom-stack

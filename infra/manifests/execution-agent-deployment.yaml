@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: execution-agent
+  namespace: default
+  labels:
+    app: execution-agent
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: execution-agent
+  template:
+    metadata:
+      labels:
+        app: execution-agent
+    spec:
+      containers:
+      - name: execution-agent
+        image: execution-agent:latest
+        ports:
+        - containerPort: 8000
+          name: metrics
+        env:
+        - name: KAFKA_BROKERS
+          value: "redpanda.kafka.svc.cluster.local:9092"
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "128Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: execution-agent
+  namespace: default
+  labels:
+    app: execution-agent
+spec:
+  selector:
+    app: execution-agent
+  ports:
+  - port: 8000
+    targetPort: 8000
+    name: metrics
