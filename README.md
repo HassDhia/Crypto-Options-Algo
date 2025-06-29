@@ -121,6 +121,24 @@ Test environment includes:
 - Redis
 - Test runner container
 
+## 🔁 Continuous Integration
+
+Our CI pipeline runs automatically on every push and pull request. Key features:
+- Runs unit tests for all agents and services
+- Executes integration tests with service containers
+- Performs Helmfile linting for infrastructure definitions
+- Builds and pushes multi-arch Docker images on main branch
+- Requires all tests to pass before merging to main
+
+Branch protection rules ensure:
+- CI workflow must pass before merging
+- Branches must be up-to-date with main
+- Force pushes are prevented
+- Code review is encouraged
+
+Pipeline configuration: [.github/workflows/ci.yml](.github/workflows/ci.yml)
+Branch protection: [.github/settings/branch-protection.yml](.github/settings/branch-protection.yml)
+
 ## 🛠 CI / CD
 
 | Stage             | Tooling                                          |
