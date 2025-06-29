@@ -1,0 +1,13 @@
+# Branch protection rules for main branch
+branches:
+  - name: main
+    protection:
+      required_status_checks:
+        contexts:
+          - CI
+        strict: true  # Require branches to be up to date before merging
+      enforce_admins: false
+      required_pull_request_reviews: null
+      restrictions: null
+      allow_force_pushes: false
+      allow_deletions: false

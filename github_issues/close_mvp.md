@@ -2,8 +2,8 @@
 
 This meta-issue tracks completion of the MVP prototype. The following issues must be resolved:
 
-- [ ] #1 - Edge VPS Terraform
-- [ ] #2 - Helmfile data plane
+- [x] #1 - Edge VPS Terraform
+- [x] #2 - Helmfile data plane
 - [ ] #3 - CI pipeline
 - [ ] #4 - IV Surface API
 - [ ] #5 - Regime Detector
