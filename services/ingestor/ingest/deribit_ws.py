@@ -4,6 +4,7 @@ import logging
 from datetime import datetime
 from typing import AsyncGenerator, Dict
 from . import producer  # Import module to avoid false unused import warning
+from ..metrics import PrometheusMetrics
 
 
 import aiohttp
@@ -34,6 +35,7 @@ async def stream() -> AsyncGenerator[dict, None]:
 
     # Initialize state
     last_emit_time = datetime.utcnow()
+    metrics = PrometheusMetrics()  # For tracking stats
 
     async with aiohttp.ClientSession() as sess, sess.ws_connect(URL) as ws:
         # Subscribe to initial snapshot channels
@@ -53,28 +55,34 @@ async def stream() -> AsyncGenerator[dict, None]:
             data = json.loads(msg.data)
             ts = datetime.utcnow()
 
-            # Handle snapshot data (initial hydration)
+            # Handle incoming messages
             if "params" in data and "channel" in data["params"]:
                 channel = data["params"]["channel"]
                 instrument = data["params"]["data"].get("instrument_name")
+                if not instrument:
+                    continue
 
-                # Break long condition for readability
-                is_option_channel = any(asset in channel for asset in ASSETS)
-                if is_option_channel and "book.T" in channel:
-                    # Store snapshot in Redis with expiry bucket
-                    if instrument:
-                        expiry = instrument.split("-")[1]
-                        redis_key = f"book:{expiry}:{instrument}"
-                        # Break long Redis operation
-                        json_data = json.dumps(
-                            data["params"]["data"]
-                        )
-                        await redis.set(
-                            redis_key,
-                            json_data,
-                            ex=KEY_TTL
-                        )
-                        logger.info("Cached snapshot for %s", instrument)
+                redis_key = f"book:{instrument}"
+
+                # Handle ticker updates (mark_iv and delta)
+                if "ticker." in channel:
+                    mark_iv = data["params"]["data"].get("mark_iv", 0.0)
+                    delta = data["params"]["data"].get("delta", 0.0)
+                    await redis.hset(
+                        redis_key,
+                        mapping={"mark_iv": mark_iv, "delta": delta}
+                    )
+
+                # Handle book updates (bids and asks)
+                elif "book." in channel:
+                    bids = json.dumps(data["params"]["data"].get("bids", []))
+                    asks = json.dumps(data["params"]["data"].get("asks", []))
+                    await redis.hset(
+                        redis_key,
+                        mapping={"bids": bids, "asks": asks}
+                    )
+                    await redis.expire(redis_key, KEY_TTL)
+                    logger.info(f"Updated book for {instrument}")
 
                     # After initial snapshot, switch to raw channels
                     if "book.T" in channel:
@@ -113,22 +121,39 @@ async def stream() -> AsyncGenerator[dict, None]:
             # Emit aggregated data every 5 minutes
             if (ts - last_emit_time).total_seconds() >= SNAPSHOT_INTERVAL:
                 last_emit_time = ts
-                await emit_snapshots(redis)
+                await emit_snapshots(redis, metrics)
 
         await redis.close()
 
 
-async def emit_snapshots(redis: aioredis.Redis) -> AsyncGenerator[Dict, None]:
-    """Emit all cached instruments as snapshots"""
-    keys = await redis.keys("book:*")
-    for key in keys:
-        data = await redis.get(key)
-        if data:
-            instrument_data = json.loads(data)
-            snapshot = format_snapshot(instrument_data)
-            # Send snapshot to Kafka
-            producer.send_option_snap(snapshot)
-            yield snapshot
+async def emit_snapshots(redis: aioredis.Redis, metrics: PrometheusMetrics) -> None:
+    """Emit all cached instruments as a single batch snapshot"""
+    complete_snapshots = []
+    incomplete_count = 0
+
+    # Scan all instrument keys
+    async for key in redis.scan_iter("book:*"):
+        data = await redis.hgetall(key)
+        if all(k in data for k in ["bids", "asks", "mark_iv", "delta"]):
+            instrument_data = {
+                "instrument_name": key.decode().split(":")[1]
+            }
+            for k, v in data.items():
+                instrument_data[k] = (
+                    json.loads(v) if k in ["bids", "asks"]
+                    else float(v)
+                )
+            complete_snapshots.append(format_snapshot(instrument_data))
+        else:
+            incomplete_count += 1
+
+    # Emit metrics
+    metrics.incr("ingestor_ticks_emitted_total", len(complete_snapshots))
+    metrics.incr("ingestor_snapshot_incomplete_total", incomplete_count)
+
+    # Send batch to Kafka if we have any complete snapshots
+    if complete_snapshots:
+        producer.send_option_snap_batch(complete_snapshots)
 
 
 def format_snapshot(data: Dict) -> Dict:

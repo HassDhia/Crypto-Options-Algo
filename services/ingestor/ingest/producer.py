@@ -25,22 +25,40 @@ PROD = Producer({
 })
 
 
-def send(topic: str, schema: dict, msg: dict):
-    """Generic function to send messages to Kafka with Avro serialization"""
+def send_batch(topic: str, schema: dict, messages: list):
+    """Send batch of messages to Kafka with Avro serialization"""
+    if not messages:
+        return
+
     try:
-        buf = io.BytesIO()
-        schemaless_writer(buf, schema, msg)
-        PROD.produce(topic, buf.getvalue())
-        logger.debug(f"Sent message to {topic}: {msg}")
+        # Serialize all messages first
+        serialized = []
+        for msg in messages:
+            buf = io.BytesIO()
+            schemaless_writer(buf, schema, msg)
+            serialized.append(buf.getvalue())
+
+        # Send batch
+        for data in serialized:
+            PROD.produce(topic, data)
+
+        # Flush to ensure delivery
+        PROD.flush()
+        logger.info(f"Sent batch of {len(messages)} messages to {topic}")
     except Exception as e:
-        logger.error(f"Failed to send message to {topic}: {e}")
+        logger.error(f"Failed to send batch to {topic}: {e}")
 
 
 def send_tick(msg: dict):
     """Send tick data to raw_ticks topic"""
-    send("raw_ticks", TICK_SCHEMA, msg)
+    send_batch("raw_ticks", TICK_SCHEMA, [msg])
 
 
 def send_option_snap(msg: dict):
     """Send option snapshot data to option_snaps topic"""
-    send("option_snaps", OPTION_SNAP_SCHEMA, msg)
+    send_batch("option_snaps", OPTION_SNAP_SCHEMA, [msg])
+
+
+def send_option_snap_batch(messages: list):
+    """Send batch of option snapshots to option_snaps topic"""
+    send_batch("option_snaps", OPTION_SNAP_SCHEMA, messages)

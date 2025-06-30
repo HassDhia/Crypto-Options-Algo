@@ -3,7 +3,25 @@ name: CI
 on: [push, pull_request]
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run Python linters
+        run: |
+          pip install flake8 black
+          flake8 scout-agent/ sizing-agent/ execution-agent/ risk-agent/ tuner-agent/ services/ingestor/
+          black --check scout-agent/ sizing-agent/ execution-agent/ risk-agent/ tuner-agent/ services/ingestor/
+      - name: Run schema validation
+        run: |
+          pip install avro-python3
+          python -m avro.tool validate services/ingestor/avro/option_snap.avsc integration-tests/sample_ticks.json
+
   test:
+    needs: lint
     runs-on: ubuntu-latest
     services:
       redpanda:
@@ -78,7 +96,13 @@ jobs:
           DERIBIT_SECRET: ${{ secrets.DERIBIT_SECRET }}
         run: pytest integration-tests -q
 
-  lint-and-build:
+      - name: Run e2e snapshot test
+        run: |
+          python services/ingestor/tests/test_throttle.py
+          pytest services/ingestor/tests/test_throttle.py -k test_throttling_emits_once_per_interval
+
+  build-and-push:
+    needs: test
     runs-on: ubuntu-latest
     permissions: {contents: read, id-token: write}
     steps:
