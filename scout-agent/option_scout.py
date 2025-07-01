@@ -1,10 +1,11 @@
 import json
 import logging
+import os
 from confluent_kafka import Consumer, KafkaException, Producer
 from confluent_kafka.serialization import SerializationContext, MessageField
 from confluent_kafka.schema_registry import SchemaRegistryClient
 from confluent_kafka.schema_registry.avro import AvroDeserializer
-import os
+
 # Configure logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -13,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 KAFKA_BOOTSTRAP = os.getenv("KAFKA_BOOTSTRAP", "redpanda:9092")
 SCHEMA_REGISTRY_URL = os.getenv("SCHEMA_REGISTRY_URL", "http://redpanda:8081")
 OPTION_SNAPS_TOPIC = "option_snaps"
-SCOUTED_OPTIONS_TOPIC = "scouted_options"
+SCOUTED_OPTIONS_TOPIC = "ticks.scouted"
 
 # Connect to schema registry
 schema_registry_conf = {'url': SCHEMA_REGISTRY_URL}
@@ -64,17 +65,19 @@ def calculate_option_score(snap):
     """
     # Extract key metrics
     bid_ask_spread = snap['best_ask_price'] - snap['best_bid_price']
-    iv_skew = snap['ask_iv'] - snap['bid_iv']  # Positive when market expects upward movement
+    # Positive when market expects upward movement
+    iv_skew = snap['ask_iv'] - snap['bid_iv']
 
     # Calculate liquidity score (lower spread is better)
     spread_score = 1 / (bid_ask_spread + 0.001)  # Avoid division by zero
 
     # Calculate IV rank score (higher IV rank is better for selling options)
-    iv_rank = (snap['mark_iv'] - 0.3) / 0.5  # Placeholder for actual IV rank calculation
+    # Placeholder for actual IV rank calculation
+    iv_rank = (snap['mark_iv'] - 0.3) / 0.5
     iv_score = max(0, min(1, iv_rank))  # Normalize between 0-1
 
     # Calculate risk-adjusted return potential
-    # Placeholder for actual calculation - would incorporate historical volatility, etc.
+    # Placeholder for actual calculation - would incorporate historical volatility
     risk_adjusted_return = 0.5
 
     # Combine factors into a composite score
@@ -85,6 +88,7 @@ def calculate_option_score(snap):
         0.1 * iv_skew
     )
     return score
+
 
 def process_option_snap(msg):
     """Process an option snapshot message and calculate its score"""
@@ -98,21 +102,23 @@ def process_option_snap(msg):
         score = calculate_option_score(snap)
 
         # Create enriched payload with score
+        # Create payload matching ScoutedTick schema
         enriched = {
-            "instrument": snap['instrument'],
             "timestamp": snap['timestamp'],
-            "score": round(score, 4),
-            "bid_ask_spread": round(
-                snap['best_ask_price'] - snap['best_bid_price'], 6),
-            "mark_iv": snap['mark_iv'],
+            "instrument": snap['instrument'],
+            "bid": snap['best_bid_price'],
+            "ask": snap['best_ask_price'],
+            "edge_pct": round(score, 4),
             "delta": snap['delta'],
-            "underlying_price": snap['underlying_price']
+            "vega": 0.0,   # Placeholder value for now
+            "theo_price": (snap['best_bid_price'] + snap['best_ask_price']) / 2
         }
         logger.info(f"Scored option {snap['instrument']}: {score}")
         return enriched
     except Exception as e:
         logger.error(f"Error processing message: {e}")
         return None
+
 
 # Create Kafka producer for scouted options
 producer_conf = {'bootstrap.servers': KAFKA_BOOTSTRAP}
@@ -143,7 +149,8 @@ def main():
                     json.dumps(enriched).encode('utf-8')
                 )
                 producer.flush()
-                logger.info(f"Published scouted option: {enriched['instrument']}")
+                instrument = enriched['instrument']
+                logger.info(f"Published scouted option: {instrument}")
 
             # Commit message offset
             consumer.commit(asynchronous=False)
@@ -152,6 +159,7 @@ def main():
         pass
     finally:
         consumer.close()
+
 
 if __name__ == "__main__":
     main()

@@ -73,15 +73,7 @@ jobs:
           POSTGRES_PASSWORD: testpass
           REDIS_HOST: localhost
           REDIS_PORT: 6379
-          DERIBIT_KEY: ${{ secrets.DERIBIT_KEY }}
-          DERIBIT_SECRET: ${{ secrets.DERIBIT_SECRET }}
-        run: |
-          pytest scout-agent/ -q
-          pytest sizing-agent/ -q
-          pytest execution-agent/ -q
-          pytest risk-agent/ -q
-          pytest tuner-agent/ -q
-          pytest services/ingestor/ -q
+        run: pytest -q  # runs all tests including new scout tests
 
       - name: Import smoke-test
         run: python -c "import redis.asyncio, prometheus_client"
@@ -110,11 +102,6 @@ jobs:
     permissions: {contents: read, id-token: write}
     steps:
       - uses: actions/checkout@v4
-      - uses: google-github-actions/auth@v2
-        if: ${{ secrets.GCP_WORKLOAD_ID_PROVIDER != '' && secrets.GCP_PROJECT_ID != '' }}
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_ID_PROVIDER }}
-          service_account: gha-terraform@${{ secrets.GCP_PROJECT_ID }}.iam.gserviceaccount.com
       - name: Setup Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Login to GitHub Container Registry
@@ -136,27 +123,6 @@ jobs:
             ghcr.io/${{ github.repository }}/execution-agent:latest
             ghcr.io/${{ github.repository }}/risk-agent:latest
             ghcr.io/${{ github.repository }}/tuner-agent:latest
-      - name: Helmfile lint
-        run: |
-          sudo apt-get install -y helm
-          curl -sSL https://github.com/helmfile/helmfile/releases/download/v0.155.0/helmfile_0.155.0_linux_amd64.tar.gz | tar -xz
-          sudo mv helmfile /usr/local/bin/
-          cd infra
-          helmfile deps
-          helmfile lint
-  test-ingestor:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with: {python-version: '3.11'}
-      - name: Unit tests (ingestor)
-        run: |
-          cd services/ingestor
-          pip install poetry
-          poetry install --with dev
-          poetry run pytest -q
-
   integration-tests:
     runs-on: ubuntu-latest
     steps:

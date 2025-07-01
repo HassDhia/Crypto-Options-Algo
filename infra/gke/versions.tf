@@ -1,9 +1,0 @@
-terraform {
-  required_version = ">= 1.5.7"
-
-  required_providers {
-    google      = { source = "hashicorp/google",  version = ">= 5.22.0" }
-    google-beta = { source = "hashicorp/google-beta", version = ">= 5.22.0" }
-    kubernetes  = { source = "hashicorp/kubernetes", version = ">= 2.29.0" }
-  }
-}
