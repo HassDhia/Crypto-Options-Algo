@@ -67,7 +67,9 @@ services:
       - redis
 
   execution-agent:
-    build: ./execution-agent
+    build:
+      context: .
+      dockerfile: execution-agent/Dockerfile
     environment:
       REDIS_URL: redis://redis:6379
       KAFKA_BROKERS: redpanda:29092
@@ -76,7 +78,9 @@ services:
       - redpanda
 
   risk-agent:
-    build: ./risk-agent
+    build:
+      context: .
+      dockerfile: risk-agent/Dockerfile
     environment:
       POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres
       REDIS_URL: redis://redis:6379
@@ -85,7 +89,9 @@ services:
       - redis
 
   sizing-agent:
-    build: ./sizing-agent
+    build:
+      context: .
+      dockerfile: sizing-agent/Dockerfile
     environment:
       REDIS_URL: redis://redis:6379
       POSTGRES_URL: postgresql://postgres:postgres@postgres:5432/postgres

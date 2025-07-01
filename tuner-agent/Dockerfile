@@ -1,25 +1,29 @@
-# Use the official Python base image
-FROM python:3.9-slim
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
-
-# Set working directory
-WORKDIR /app
+# Build stage for common module
+FROM python:3.10-slim as builder
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements and install Python dependencies
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the application code
+# Copy entire project to access common module
+WORKDIR /build
 COPY . .
 
-# Command to run the backtester
-CMD ["python", "-m", "backtester"]
+# Install dependencies from root requirements.txt
+RUN pip install --no-cache-dir -r /build/requirements.txt
+
+# Final stage
+FROM python:3.10-slim
+
+WORKDIR /app
+
+# Copy installed dependencies from builder
+COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
+
+# Copy common module
+COPY --from=builder /build/common /app/common
+
+# Copy tuner-agent code
+COPY ./tuner-agent/ /app/
+
+CMD ["python", "-u", "/app/__main__.py"]

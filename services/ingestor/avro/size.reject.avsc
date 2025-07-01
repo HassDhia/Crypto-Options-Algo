@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "SizeReject",
+  "namespace": "com.crypto.options.algo",
+  "fields": [
+    {"name": "signal_id", "type": "string"},
+    {"name": "reason", "type": "string"},
+    {"name": "reject_timestamp", "type": "long"}
+  ]
+}

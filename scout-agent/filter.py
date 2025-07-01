@@ -1,17 +1,24 @@
 import os
-import math
 import logging
 import redis
 from datetime import datetime
 from typing import Dict, Optional
+from common.quant import bs  # New import
+
 
 logger = logging.getLogger(__name__)
 
+
 class OptionFilter:
     """Encapsulates deterministic filtering logic for option candidates."""
-    def __init__(self, delta_min: float = 0.25, delta_max: float = 0.75,
-                 min_edge: float = 0.0, max_skew: float = float('inf'),
-                 avoid_iv_crush: bool = False):
+    def __init__(
+        self,
+        delta_min: float = 0.25,
+        delta_max: float = 0.75,
+        min_edge: float = 0.0,
+        max_skew: float = float('inf'),
+        avoid_iv_crush: bool = False
+    ):
         """
         Initialize filter thresholds.
         :param delta_min: Minimum acceptable delta (0.0-1.0)
@@ -31,7 +38,6 @@ class OptionFilter:
         try:
             parts = instrument.split('-')
             underlying_sym = parts[0]
-            expiry_str = parts[1]
             strike = float(parts[2])
             option_type = parts[3]
         except Exception as e:
@@ -50,10 +56,14 @@ class OptionFilter:
         # Delta approximation based on moneyness
         if option_type == 'C':
             # Calls: ITM when underlying > strike
-            delta = max(0.0, min(1.0, 0.5 * (moneyness ** 0.5)))
+            delta = max(0.0, min(1.0,
+                0.5 * (moneyness ** 0.5)
+            )
         elif option_type == 'P':
             # Puts: ITM when underlying < strike
-            delta = max(0.0, min(1.0, 0.5 * ((strike / underlying_price) ** 0.5)))
+            delta = max(0.0, min(1.0,
+                0.5 * ((strike / underlying_price) ** 0.5)
+            )
         else:
             delta = 0.5
 
@@ -73,18 +83,48 @@ class OptionFilter:
             logger.error(f"Error getting underlying price: {e}")
             return None
 
-    def _compute_theoretical_edge(self, instrument: str, bid: float, ask: float) -> float:
-        """Estimate theoretical edge (model price vs market)"""
-        # Placeholder: actual implementation would use pricing model
-        mid_price = (bid + ask) / 2.0
-        theoretical_price = mid_price  # Should be replaced with model price
-        edge = 0.0
+    def _compute_theoretical_edge(
+        self, instrument: str, bid: float, ask: float
+    ) -> float:
+        """Estimate theoretical edge using Black-Scholes when enabled"""
+        if os.getenv("SCOUT_USE_BS", "0") == "1":
+            try:
+                # Parse instrument to extract strike and option type
+                parts = instrument.split('-')
+                strike = float(parts[2])
+                option_type = parts[3].lower()
+                right = 'c' if option_type == 'c' else 'p'
 
-        # Positive edge when model price > ask (undervalued)
-        if theoretical_price > ask:
-            edge = (theoretical_price - ask) / ask
+                # Get underlying price - using existing method
+                underlying_sym = parts[0]
+                s = self._get_underlying_price(underlying_sym)
+                if s is None:
+                    return 0.0
 
-        return edge
+                # Parse expiration time
+                expiry_str = parts[1]
+                exp_day = int(expiry_str[:2])
+                exp_month_str = expiry_str[2:5]
+                exp_year = 2000 + int(expiry_str[5:])
+                exp_month = datetime.strptime(exp_month_str, "%b").month
+                exp_date = datetime(exp_year, exp_month, exp_day)
+                t = (exp_date - datetime.utcnow()).days / 365.0
+
+                # Placeholder values - should be replaced with actual market data
+                r = 0.01  # Risk-free rate
+                sigma = 0.7  # IV
+
+                # Calculate theoretical price
+                theo = bs.theo_price(right, s, strike, t, r, sigma)
+                mid_px = (bid + ask) / 2.0
+                edge_pct = (theo - mid_px) / mid_px
+                return edge_pct
+            except Exception as e:
+                logger.error(f"BS calculation failed: {e}")
+                return 0.0
+        else:
+            # Fallback to existing heuristic
+            return 0.0
 
     def _check_iv_skew(self, instrument: str) -> bool:
         """Check IV skew/crush criteria"""

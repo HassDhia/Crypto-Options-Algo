@@ -10,13 +10,18 @@ import logging
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# Get project root
+PROJECT_ROOT = os.path.abspath(os.path.join(
+    os.path.dirname(__file__),
+    '..', '..', '..'
+))
 
 # Load schemas
 TICK_SCHEMA = parse_schema(
-    json.load(open("../integration-tests/tick.avsc"))
+    json.load(open(os.path.join(PROJECT_ROOT, 'integration-tests', 'tick.avsc')))
 )
 OPTION_SNAP_SCHEMA = parse_schema(
-    json.load(open("../avro/option_snap.avsc"))
+    json.load(open(os.path.join(PROJECT_ROOT, 'services', 'ingestor', 'avro', 'option_snap.avsc')))
 )
 
 

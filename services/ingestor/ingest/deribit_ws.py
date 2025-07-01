@@ -3,16 +3,17 @@ import os
 import logging
 from datetime import datetime
 from typing import AsyncGenerator, Dict
-from . import producer  # Import module to avoid false unused import warning
-from ..metrics import PrometheusMetrics
-
-
 import aiohttp
-import aioredis
+import redis.asyncio as aioredis
 
-# Configure logging
+from . import producer
+from services.ingestor.metrics import PrometheusMetrics
+
+# Importing the logging_conf module sets up logging configuration
+import services.ingestor.ingest.logging_conf  # noqa: F401
+
+# Get logger for this module
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO)
 
 # Deribit configuration
 URL = "wss://www.deribit.com/ws/api/v2"
@@ -29,7 +30,7 @@ async def stream() -> AsyncGenerator[dict, None]:
     # Connect to Redis
     redis = aioredis.Redis(
         host=os.getenv("REDIS_HOST", "localhost"),
-        port=int(os.getenv("REDIS_PORT", 6379)),
+        port=int(os.getenv("REDIS_PORT", "6379")),
         db=0
     )
 
@@ -38,6 +39,7 @@ async def stream() -> AsyncGenerator[dict, None]:
     metrics = PrometheusMetrics()  # For tracking stats
 
     async with aiohttp.ClientSession() as sess, sess.ws_connect(URL) as ws:
+        logger.debug("WS connected to Deribit")
         # Subscribe to initial snapshot channels
         snapshot_channels = [
             SNAPSHOT_CHANNEL.format(asset=asset) for asset in ASSETS
@@ -82,7 +84,7 @@ async def stream() -> AsyncGenerator[dict, None]:
                         mapping={"bids": bids, "asks": asks}
                     )
                     await redis.expire(redis_key, KEY_TTL)
-                    logger.info(f"Updated book for {instrument}")
+                    logger.debug("Redis cache updated: %s", redis_key)
 
                     # After initial snapshot, switch to raw channels
                     if "book.T" in channel:
@@ -108,10 +110,13 @@ async def stream() -> AsyncGenerator[dict, None]:
                     # Update Redis cache
                     # Optimize Redis update
                     expiry = instrument.split("-")[1]
+                    # Create a more specific key to avoid conflicts
                     redis_key = f"book:{expiry}:{instrument}"
+                    # Serialize the data
                     json_data = json.dumps(
                         data["params"]["data"]
                     )
+                    # Store in Redis with expiration
                     await redis.set(
                         redis_key,
                         json_data,
@@ -126,7 +131,10 @@ async def stream() -> AsyncGenerator[dict, None]:
         await redis.close()
 
 
-async def emit_snapshots(redis: aioredis.Redis, metrics: PrometheusMetrics) -> None:
+async def emit_snapshots(
+    redis: aioredis.Redis,
+    metrics: PrometheusMetrics
+) -> None:
     """Emit all cached instruments as a single batch snapshot"""
     complete_snapshots = []
     incomplete_count = 0
@@ -148,8 +156,23 @@ async def emit_snapshots(redis: aioredis.Redis, metrics: PrometheusMetrics) -> N
             incomplete_count += 1
 
     # Emit metrics
-    metrics.incr("ingestor_ticks_emitted_total", len(complete_snapshots))
-    metrics.incr("ingestor_snapshot_incomplete_total", incomplete_count)
+    metrics.incr(
+        "ingestor_ticks_emitted_total",
+        len(complete_snapshots)
+    )
+
+    # Track incomplete snapshots with Prometheus
+    if incomplete_count > 0:
+        metrics.incr(
+            "ingestor_snapshot_incomplete_total",
+            incomplete_count
+        )
+
+    # Emit debug info
+    logger.debug(
+        "Emitting snapshot | complete=%d incomplete=%d",
+        len(complete_snapshots), incomplete_count
+    )
 
     # Send batch to Kafka if we have any complete snapshots
     if complete_snapshots:

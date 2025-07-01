@@ -6,3 +6,6 @@ pandas
 torch
 kafka-python
 redis
+prometheus_client
+aiohttp
+redis>=5.0.0   # includes redis.asyncio, replaces aioredis

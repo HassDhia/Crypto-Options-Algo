@@ -1,16 +1,20 @@
 import logging
 from common.kafka import create_consumer
-from .metrics import edge_capture, slip_bp, cum_pnl, start_metrics_server
+from metrics import edge_capture, slip_bp, cum_pnl, start_metrics_server
+
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 # Start metrics server
 start_metrics_server()
 
+
 def handle_fill(fill):
     """Process a trade fill and update metrics"""
+
     try:
         # Calculate metrics
         realised_edge = fill['price'] - fill['theoretical_mid']
@@ -24,6 +28,7 @@ def handle_fill(fill):
         cum_pnl.set(current_pnl + (fill['size'] * realised_edge))
     except Exception as e:
         logger.error(f"Error processing fill: {e}")
+
 
 def main():
     # Create Kafka consumer for scouted ticks

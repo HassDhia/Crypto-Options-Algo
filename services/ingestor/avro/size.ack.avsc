@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "SizeAck",
+  "namespace": "com.crypto.options.algo",
+  "fields": [
+    {"name": "signal_id", "type": "string"},
+    {"name": "approved_size", "type": "double"},
+    {"name": "ack_timestamp", "type": "long"}
+  ]
+}

@@ -20,10 +20,8 @@ WORKDIR /app
 # Copy installed dependencies from builder
 COPY --from=builder /usr/local/lib/python3.10/site-packages /usr/local/lib/python3.10/site-packages
 
-# Copy common module
+# Copy common module and execution-agent code
 COPY --from=builder /build/common /app/common
-
-# Copy execution-agent code
-COPY ./ /app/
+COPY ./execution-agent/ /app/
 
 CMD ["python", "-u", "/app/__main__.py"]

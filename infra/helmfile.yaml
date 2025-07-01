@@ -53,3 +53,5 @@ releases:
     version: 7.3.0
     values:
       - values/grafana.yaml
+      - values/grafana-dashboard-kpi-ribbon.json
+      - values/grafana-dashboard-edge-histogram.json

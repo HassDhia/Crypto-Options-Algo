@@ -82,6 +82,9 @@ jobs:
           pytest risk-agent/ -q
           pytest tuner-agent/ -q
           pytest services/ingestor/ -q
+
+      - name: Import smoke-test
+        run: python -c "import redis.asyncio, prometheus_client"
       - name: Run integration tests
         env:
           KAFKA_BROKERS: localhost:9092

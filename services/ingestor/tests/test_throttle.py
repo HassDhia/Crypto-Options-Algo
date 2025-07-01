@@ -1,8 +1,18 @@
+import os
+import sys
 import pytest
-from freezegun import freeze_time
-from unittest.mock import AsyncMock, patch
-from datetime import datetime, timedelta
-from ..ingest.deribit_ws import stream, emit_snapshots
+import json
+
+# Setup path before other imports
+parent_dir = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), '..')
+)
+sys.path.insert(0, parent_dir)
+
+# Local imports after path setup
+from freezegun import freeze_time  # noqa: E402
+from unittest.mock import AsyncMock, patch  # noqa: E402
+from ingest.deribit_ws import stream, emit_snapshots  # noqa: E402
 
 
 @pytest.mark.asyncio

@@ -110,6 +110,48 @@ def main():
                 "scout_processed_at": int(time.time() * 1000)
             }
 
+            # Add debug logging for edge calculation when BS is enabled
+            if os.getenv("SCOUT_USE_BS", "0") == "1":
+                from common.quant import bs
+                try:
+                    # Recompute values for logging
+                    parts = instrument.split('-')
+                    strike = float(parts[2])
+                    option_type = parts[3].lower()
+                    right = 'c' if option_type == 'c' else 'p'
+                    underlying_sym = parts[0]
+
+                    # Get underlying price
+                    s = option_filter._get_underlying_price(underlying_sym)
+                    if s is None:
+                        s = strike  # Fallback to strike price
+
+                    # Parse expiration time
+                    expiry_str = parts[1]
+                    exp_day = int(expiry_str[:2])
+                    exp_month_str = expiry_str[2:5]
+                    exp_year = 2000 + int(expiry_str[5:])
+                    exp_month = datetime.strptime(exp_month_str, "%b").month
+                    exp_date = datetime(exp_year, exp_month, exp_day)
+                    t = (exp_date - datetime.utcnow()).days / 365.0
+
+                    # Placeholder values
+                    r = 0.01
+                    sigma = 0.7
+
+                    # Calculate values
+                    theo = bs.theo_price(right, s, strike, t, r, sigma)
+                    mid_px = (bid + ask) / 2.0
+                    edge_pct = (theo - mid_px) / mid_px
+                    delta_val = bs.delta(right, s, strike, t, r, sigma)
+
+                    logger.debug(
+                        "CANDIDATE %s edge=%.4f Δ=%.3f theo=%.6f bid=%.6f ask=%.6f",
+                        instrument, edge_pct, delta_val, theo, bid, ask
+                    )
+                except Exception as e:
+                    logger.error(f"Debug logging failed: {e}")
+
             # Publish to scouted topic
             producer.send("ticks.scouted", value=scouted_tick)
             logger.info(f"Scouted candidate: {instrument} (passed filters)")
