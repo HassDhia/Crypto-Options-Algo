@@ -1,6 +1,0 @@
-statefulset:
-  replicas: 3
-config:
-  developer_mode: true
-tls:
-  enabled: false

@@ -1,6 +1,0 @@
-fastapi
-pydantic
-numpy
-pandas
-torch
-redis

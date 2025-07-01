@@ -1,5 +1,0 @@
-statefulset:
-  replicas: 3
-storage:
-  persistentVolume:
-    size: 50Gi

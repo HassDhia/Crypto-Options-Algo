@@ -1,9 +1,0 @@
-auth:
-  existingSecret: postgres-admin
-primary:
-  persistence:
-    storageClass: "premium-rwo"
-  resources:
-    requests:
-      cpu: "250m"
-      memory: "512Mi"

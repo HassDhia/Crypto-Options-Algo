@@ -5,8 +5,6 @@
 test-unit:
 	@echo "Running TypeScript unit tests..."
 	@npm run test --workspaces
-	@echo "Running Go unit tests..."
-	@cd execution-agent && go test ./...
 	@echo "Running Python unit tests..."
 	@cd services/ingestor && pytest
 
@@ -21,18 +19,6 @@ test-integration:
 dev-up:
 	@echo "Starting development environment..."
 	@docker compose -f docker-compose.dev.yml up --build -d
-
-# Provision Edge VPS
-provision-edge:
-	@echo "Provisioning Edge VPS..."
-	@cd infra/edge-vps && make init && make apply
-
-# Deploy Data Plane
-deploy-data-plane:
-	@echo "Creating namespaces and secrets..."
-	@./infra/create_ns_and_secrets.sh
-	@echo "Deploying data plane services..."
-	@cd infra && helmfile apply
 
 # Clean test artifacts
 clean:

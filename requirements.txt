@@ -4,7 +4,6 @@ pydantic
 numpy
 pandas
 torch
-kafka-python
 redis
 prometheus_client
 aiohttp
