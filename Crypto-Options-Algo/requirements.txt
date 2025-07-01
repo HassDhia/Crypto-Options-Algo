@@ -1,0 +1,6 @@
+fastapi
+uvicorn[standard]
+httpx
+py_vollib==1.0.2
+pydantic
+redis>=5.0.0   # optional
