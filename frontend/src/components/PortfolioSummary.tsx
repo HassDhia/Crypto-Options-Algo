@@ -22,9 +22,9 @@ export const PortfolioSummary: React.FC<Props> = ({ trades, totalPnl }) => {
         <p>No trades approved yet.</p>
       ) : (
         <ul>
-          {trades.map(trade => (
-            <li key={trade.instrument}>
-              {trade.instrument} – Qty: {trade.quantity}, Entry: {trade.entry_price}, 
+          {trades.map((trade, idx) => (
+            <li key={idx}>
+              {trade.instrument} – Qty: {trade.quantity}, Entry: {trade.entry_price.toFixed(2)}, 
               Current: {trade.current_price.toFixed(2)}, 
               P&L: <strong>{trade.pnl.toFixed(2)}</strong>
             </li>
