@@ -1,0 +1,18 @@
+# docker-compose.yml
+version: "3.9"
+services:
+  api:
+    build: ./backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    volumes:
+      - ./backend/app:/app/app   # mount code for hot-reload in dev (optional)
+      - ./trades.db:/app/trades.db   # persist the SQLite database file
+    ports:
+      - "8000:8000"
+  frontend:
+    build: ./frontend
+    command: npm run dev -- --host 0.0.0.0
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "3000:3000"

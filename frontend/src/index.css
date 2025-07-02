@@ -1,0 +1,15 @@
+body {
+  font-family: sans-serif;
+  margin: 2rem;
+}
+table {
+  border-collapse: collapse;
+}
+th, td {
+  border: 1px solid #ccc;
+  padding: 0.4rem 0.8rem;
+}
+button {
+  padding: 4px 12px;
+  cursor: pointer;
+}
